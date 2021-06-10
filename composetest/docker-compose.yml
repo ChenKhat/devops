@@ -1,0 +1,87 @@
+version: "3.9"
+services:
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    environment:
+        - TZ=Asia/Shanghai
+    volumes:
+        - /usr/local/jenkins/jenkins_home:/var/jenkins_home
+        - /var/run/docker.sock:/var/run/docker.sock
+        - /usr/bin/docker:/usr/bin/docker
+        - /usr/lib/x86_64-linux-gnu/libltdl.so.7:/usr/lib/x86_64-linux-gnu/libltdl.so.7
+    ports:
+        - "8080:8080"
+    expose:
+        - "8080"
+        - "50000"
+    privileged: true
+    user: root
+    restart: always
+  # gitlab:
+  #   image: 'gitlab/gitlab-ce:latest'
+  #   container_name: gitlab
+  #   restart: always
+  #   environment:
+  #     GITLAB_OMNIBUS_CONFIG: |
+  #       external_url 'https://gitlab.bolted.cn' #若有域名可以写域名
+  #       gitlab_rails['gitlab_shell_ssh_port'] = 2224
+  #   ports:
+  #     - '8929:8929'
+  #     - '2224:22'
+  #   volumes:
+  #     #将相关配置映射到当前目录下的config目录
+  #     - './docker-gitlab/config:/etc/gitlab'
+  #     #将日志映射到当前目录下的logs目录
+  #     - './docker-gitlab/logs:/var/log/gitlab'
+  #     #将数据映射到当前目录下的data目录
+  #     - './docker-gitlab/data:/var/opt/gitlab'
+  mysql-db:
+    container_name: mysql-docker        # 指定容器的名称
+    image: registry.cn-shenzhen.aliyuncs.com/tyssq/mysql:8.0                   # 指定镜像和版本
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST}
+      TZ: Asia/Shanghai     # 指定时区
+    volumes:
+      - "${MYSQL_DIR}/data:/var/lib/mysql"           # 挂载数据目录
+      - "${MYSQL_DIR}/config:/etc/mysql/conf.d"      # 挂载配置文件目录
+  yapi:
+    image: jayfong/yapi:latest
+    container_name: yapi
+    ports:
+      - 3000:3000
+    # volumes:
+    #  - ./config.json:/yapi/config.json
+    environment:
+      - YAPI_ADMIN_ACCOUNT=khat.yunqi@gmail.com
+      - YAPI_ADMIN_PASSWORD=chenyunqi297
+      - YAPI_CLOSE_REGISTER=true
+      - YAPI_DB_SERVERNAME=mongo
+      - YAPI_DB_PORT=27017
+      - YAPI_DB_DATABASE=yapi
+      - YAPI_MAIL_ENABLE=true
+      - YAPI_LDAP_LOGIN_ENABLE=true
+      - YAPI_PLUGINS=[]
+    depends_on:
+      - mongo
+    privileged: true
+    restart: always
+    networks:
+      - yapi-net
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    volumes:
+      - ./mongo/data/db:/data/db
+    expose:
+      - 27017
+    privileged: true
+    restart: always
+    networks:
+      - yapi-net
+networks:
+  yapi-net:
+    driver: bridge
