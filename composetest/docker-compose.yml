@@ -82,6 +82,23 @@ services:
     restart: always
     networks:
       - yapi-net
+  redis:
+    image: redis:6.2.4 
+    container_name: redis
+    restart: always
+    tty: true
+    ports:
+      - 6379:6379
+    volumes:
+      - /etc/localtime:/etc/localtime
+      - $PWD/redis/data:/data
+      - $PWD/redis/conf/redis.conf:/etc/redis/redis.conf
+      - $PWD/redis/log/redis-server.log:/var/log/redis/redis-server.log
+    networks: 
+      - redis_net
+    command: redis-server --appendonly yes
 networks:
   yapi-net:
+    driver: bridge
+  redis_net:
     driver: bridge
